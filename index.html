@@ -187,19 +187,29 @@
 
   .canvas-wrap {
     flex: 1;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: auto;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1.5rem;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
     background: #E8E0D4;
     background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0);
     background-size: 20px 20px;
+    scroll-behavior: smooth;
   }
-  .canvas-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+  .canvas-wrap::-webkit-scrollbar { width: 6px; }
   .canvas-wrap::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
 
-  #pdf-canvas {
+  #pdf-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .pdf-page-canvas {
     box-shadow: 0 4px 32px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.12);
     border-radius: 2px;
     max-width: 100%;
@@ -207,10 +217,9 @@
     background: #fff;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    pointer-events: none;
   }
-
-  /* Disable right-click save */
-  #pdf-canvas { -webkit-touch-callout: none; pointer-events: none; }
   .canvas-wrap { pointer-events: auto; }
 
   /* ── BOTTOM BAR ── */
@@ -375,7 +384,7 @@
 
     <!-- Canvas -->
     <div class="canvas-wrap" id="canvas-wrap">
-      <canvas id="pdf-canvas"></canvas>
+      <div id="pdf-pages"></div>
     </div>
   </div>
 </div>
@@ -443,14 +452,15 @@
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  let pdfDoc      = null;
-  let currentPage = 1;
-  let totalPages  = 0;
-  let scale       = 1.2;
-  let rendering   = false;
-  let renderQueue = null;
-  let tocItems    = [];
-  let sidebarOpen = true;
+  let pdfDoc        = null;
+  let currentPage   = 1;
+  let totalPages    = 0;
+  let scale         = 0;       // auto-calculated on first render
+  let tocItems      = [];
+  let sidebarOpen   = true;
+  let pageObserver  = null;
+  let renderedPages = new Set();
+  let renderingSet  = new Set();
 
   // ── LOAD PDF ────────────────────────────────────────────────
   async function loadPDF() {
@@ -468,7 +478,7 @@
       document.getElementById('total-pages').textContent = totalPages;
       setLoading('Preparing viewer…', 95);
       await buildTOC();
-      await renderPage(1);
+      await initScrollViewer();
       document.getElementById('loading').classList.add('hidden');
     } catch (err) {
       console.error(err);
@@ -482,41 +492,90 @@
     document.getElementById('loading-bar').style.width = pct + '%';
   }
 
-  // ── RENDER PAGE ─────────────────────────────────────────────
-  async function renderPage(num) {
-    if (rendering) { renderQueue = num; return; }
-    rendering = true;
+  // ── SCROLL VIEWER ───────────────────────────────────────────
+  async function initScrollViewer() {
+    const wrap = document.getElementById('canvas-wrap');
+    const container = document.getElementById('pdf-pages');
+    container.innerHTML = '';
+    renderedPages.clear();
+    renderingSet.clear();
 
-    const page    = await pdfDoc.getPage(num);
-    const wrap    = document.getElementById('canvas-wrap');
-    const canvas  = document.getElementById('pdf-canvas');
-    const ctx     = canvas.getContext('2d');
+    // Calculate scale from first page
+    const firstPage = await pdfDoc.getPage(1);
+    const vp0 = firstPage.getViewport({ scale: 1 });
+    const avail = wrap.clientWidth - 32;
+    scale = Math.min(1.4, avail / vp0.width);
 
-    // Auto-fit scale on first load
-    if (num === 1) {
-      const vp0   = page.getViewport({ scale: 1 });
-      const avail = wrap.clientWidth - 48;
-      scale = Math.min(1.4, avail / vp0.width);
+    // Create placeholder divs for all pages
+    const vp = firstPage.getViewport({ scale });
+    for (let i = 1; i <= totalPages; i++) {
+      const wrapper = document.createElement('div');
+      wrapper.id = `page-wrapper-${i}`;
+      wrapper.dataset.page = i;
+      wrapper.style.cssText = `width:${vp.width}px;height:${vp.height}px;background:#fff;box-shadow:0 4px 32px rgba(0,0,0,0.22);border-radius:2px;flex-shrink:0;`;
+      container.appendChild(wrapper);
     }
 
+    // Render first 3 pages immediately
+    for (let i = 1; i <= Math.min(3, totalPages); i++) {
+      await renderPageIntoWrapper(i);
+    }
+
+    // Set up IntersectionObserver for lazy loading
+    pageObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const num = parseInt(entry.target.dataset.page);
+          // Render this page and neighbours
+          for (let i = Math.max(1, num-1); i <= Math.min(totalPages, num+2); i++) {
+            if (!renderedPages.has(i) && !renderingSet.has(i)) {
+              renderPageIntoWrapper(i);
+            }
+          }
+          // Update current page indicator
+          currentPage = num;
+          updateUI();
+        }
+      });
+    }, { root: wrap, rootMargin: '200px 0px', threshold: 0.1 });
+
+    document.querySelectorAll('#pdf-pages > div').forEach(el => pageObserver.observe(el));
+    updateUI();
+  }
+
+  async function renderPageIntoWrapper(num) {
+    if (renderedPages.has(num) || renderingSet.has(num)) return;
+    renderingSet.add(num);
+
+    const wrapper = document.getElementById(`page-wrapper-${num}`);
+    if (!wrapper) return;
+
+    const page = await pdfDoc.getPage(num);
     const viewport = page.getViewport({ scale });
-    const dpr      = window.devicePixelRatio || 1;
-    canvas.width   = viewport.width  * dpr;
-    canvas.height  = viewport.height * dpr;
+    const dpr = window.devicePixelRatio || 1;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'pdf-page-canvas';
+    canvas.width  = viewport.width  * dpr;
+    canvas.height = viewport.height * dpr;
     canvas.style.width  = viewport.width  + 'px';
     canvas.style.height = viewport.height + 'px';
-    ctx.scale(dpr, dpr);
 
+    wrapper.style.width  = viewport.width  + 'px';
+    wrapper.style.height = viewport.height + 'px';
+    wrapper.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
     await page.render({ canvasContext: ctx, viewport }).promise;
 
-    currentPage = num;
-    updateUI();
+    renderedPages.add(num);
+    renderingSet.delete(num);
+  }
 
-    rendering = false;
-    if (renderQueue !== null) {
-      const q = renderQueue; renderQueue = null;
-      renderPage(q);
-    }
+  // Legacy goToPage — scrolls to page wrapper
+  function renderPage(num) {
+    goToPage(num);
   }
 
   // ── TOC ─────────────────────────────────────────────────────
@@ -783,8 +842,12 @@
   // ── NAVIGATION ──────────────────────────────────────────────
   function goToPage(n) {
     n = Math.max(1, Math.min(totalPages, n));
-    if (n === currentPage && !rendering) return;
-    renderPage(n);
+    const wrapper = document.getElementById(`page-wrapper-${n}`);
+    if (wrapper) {
+      wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      currentPage = n;
+      updateUI();
+    }
     document.getElementById('page-input').value = n;
   }
 
@@ -803,18 +866,25 @@
   // ── ZOOM ────────────────────────────────────────────────────
   function changeZoom(delta) {
     scale = Math.max(0.4, Math.min(3.0, scale + delta));
-    renderPage(currentPage);
+    reRenderAll();
     updateZoomLabel();
   }
 
   function fitToWidth() {
     const wrap = document.getElementById('canvas-wrap');
-    pdfDoc.getPage(currentPage).then(page => {
-      const vp   = page.getViewport({ scale: 1 });
-      scale      = (wrap.clientWidth - 48) / vp.width;
-      renderPage(currentPage);
+    pdfDoc.getPage(1).then(page => {
+      const vp = page.getViewport({ scale: 1 });
+      scale    = (wrap.clientWidth - 32) / vp.width;
+      reRenderAll();
       updateZoomLabel();
     });
+  }
+
+  function reRenderAll() {
+    renderedPages.clear();
+    renderingSet.clear();
+    if (pageObserver) pageObserver.disconnect();
+    initScrollViewer().then(() => goToPage(currentPage));
   }
 
   function updateZoomLabel() {
@@ -831,7 +901,7 @@
     document.getElementById('btn-first').disabled = currentPage <= 1;
     document.getElementById('btn-next').disabled  = currentPage >= totalPages;
     document.getElementById('btn-last').disabled  = currentPage >= totalPages;
-    updateZoomLabel();
+    if (scale) updateZoomLabel();
   }
 
   function toggleSidebar() {
@@ -846,8 +916,8 @@
   // ── KEYBOARD ────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goToPage(currentPage + 1);
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goToPage(currentPage - 1);
+    if (e.key === 'ArrowDown') goToPage(currentPage + 1);
+    if (e.key === 'ArrowUp')   goToPage(currentPage - 1);
     if (e.key === 'Home') goToPage(1);
     if (e.key === 'End')  goToPage(totalPages);
     if (e.key === '+' || e.key === '=') changeZoom(0.15);
