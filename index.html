@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mor Bhagwa</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Nunito+Sans:wght@300;400;600&display=swap');
+
+  :root {
+    --saffron: #FF6B00;
+    --saffron-light: #FFF3E8;
+    --saffron-mid: #FFB366;
+    --deep: #1A0A00;
+    --gold: #C8860A;
+    --gold-light: #FDF3DC;
+    --text: #2C1A00;
+    --muted: #7A5C3A;
+    --surface: #FFFAF4;
+    --border: rgba(200,134,10,0.18);
+    --sidebar-w: 280px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito Sans', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--deep);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.25rem;
+    height: 52px;
+    flex-shrink: 0;
+    border-bottom: 2px solid var(--saffron);
+    gap: 1rem;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 12px; }
+
+  .menu-btn {
+    background: none; border: none; cursor: pointer;
+    color: #fff; padding: 6px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .menu-btn:hover { background: rgba(255,255,255,0.1); }
+  .menu-btn svg { width: 20px; height: 20px; }
+
+  .book-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--saffron-mid);
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+
+  .header-controls {
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .ctrl-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff; cursor: pointer;
+    padding: 5px 10px; border-radius: 6px;
+    font-size: 12px; font-family: inherit;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.16); }
+  .ctrl-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .ctrl-btn:disabled { opacity: .35; cursor: default; }
+
+  .page-jump {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; color: rgba(255,255,255,0.7);
+  }
+  .page-jump input {
+    width: 44px; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px; color: #fff;
+    font-family: inherit; font-size: 12px;
+    padding: 2px 6px; text-align: center;
+  }
+  .page-jump input:focus { outline: 1px solid var(--saffron); }
+  #total-pages { opacity: .5; }
+
+  /* ── LAYOUT ── */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: #fff;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: width .25s ease, opacity .25s ease;
+  }
+  .sidebar.hidden {
+    width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-header {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--gold-light);
+    flex-shrink: 0;
+  }
+
+  .sidebar-search {
+    padding: .6rem .75rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sidebar-search input {
+    width: 100%; padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px; font-size: 12px;
+    font-family: inherit; color: var(--text);
+    background: var(--surface);
+  }
+  .sidebar-search input:focus { outline: 1px solid var(--saffron); }
+
+  .toc-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: .5rem 0;
+  }
+  .toc-list::-webkit-scrollbar { width: 4px; }
+  .toc-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .toc-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 7px 1rem; cursor: pointer;
+    font-size: 13px; line-height: 1.4;
+    color: var(--text); border-left: 3px solid transparent;
+    transition: background .12s, border-color .12s;
+  }
+  .toc-item:hover { background: var(--saffron-light); border-left-color: var(--saffron-mid); }
+  .toc-item.active { background: var(--saffron-light); border-left-color: var(--saffron); color: var(--saffron); font-weight: 600; }
+  .toc-item.level-2 { padding-left: 1.75rem; font-size: 12px; }
+  .toc-item.level-3 { padding-left: 2.5rem; font-size: 11.5px; color: var(--muted); }
+  .toc-page { margin-left: auto; font-size: 11px; color: var(--muted); flex-shrink: 0; padding-left: 8px; }
+  .toc-empty { padding: 2rem 1rem; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── VIEWER ── */
+  .viewer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1.5rem;
+    background: #E8E0D4;
+    background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+  .canvas-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+  .canvas-wrap::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+
+  #pdf-canvas {
+    box-shadow: 0 4px 32px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.12);
+    border-radius: 2px;
+    max-width: 100%;
+    display: block;
+    background: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Disable right-click save */
+  #pdf-canvas { -webkit-touch-callout: none; pointer-events: none; }
+  .canvas-wrap { pointer-events: auto; }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    background: var(--deep);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .nav-group { display: flex; align-items: center; gap: 8px; }
+
+  .nav-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #fff; cursor: pointer;
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+    flex-shrink: 0;
+  }
+  .nav-btn:hover:not(:disabled) { background: var(--saffron); border-color: var(--saffron); }
+  .nav-btn:disabled { opacity: .3; cursor: default; }
+  .nav-btn svg { width: 18px; height: 18px; }
+
+  .progress-wrap { flex: 1; max-width: 400px; }
+  .progress-bar-track {
+    height: 4px; background: rgba(255,255,255,0.1);
+    border-radius: 2px; overflow: hidden; cursor: pointer;
+  }
+  .progress-bar-fill {
+    height: 100%; background: var(--saffron);
+    border-radius: 2px; transition: width .2s;
+  }
+
+  .page-info { font-size: 12px; color: rgba(255,255,255,0.5); text-align: center; margin-top: 4px; }
+
+  .zoom-group { display: flex; align-items: center; gap: 6px; }
+  .zoom-label { font-size: 12px; color: rgba(255,255,255,0.5); min-width: 40px; text-align: center; }
+
+  /* ── LOADING ── */
+  .loading-overlay {
+    position: absolute; inset: 0;
+    background: var(--surface);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1.5rem; z-index: 100;
+  }
+  .loading-overlay.hidden { display: none; }
+
+  .lotus {
+    width: 64px; height: 64px;
+    animation: spin 2s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.5rem; color: var(--saffron);
+  }
+  .loading-sub { font-size: 13px; color: var(--muted); }
+  .loading-bar-track {
+    width: 200px; height: 3px;
+    background: var(--border); border-radius: 2px; overflow: hidden;
+  }
+  .loading-bar-fill {
+    height: 100%; background: var(--saffron);
+    border-radius: 2px; width: 0%;
+    transition: width .3s;
+  }
+
+  /* ── ERROR ── */
+  .error-box {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem; padding: 2rem; text-align: center;
+  }
+  .error-box.show { display: flex; }
+  .error-box h2 { font-family: 'EB Garamond', serif; color: var(--saffron); font-size: 1.4rem; }
+  .error-box p { font-size: 13px; color: var(--muted); max-width: 380px; line-height: 1.7; }
+  .error-box code { font-size: 11px; background: var(--gold-light); padding: 2px 6px; border-radius: 4px; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 640px) {
+    .sidebar { position: absolute; left: 0; top: 0; bottom: 0; z-index: 50; box-shadow: 4px 0 20px rgba(0,0,0,0.15); }
+    .sidebar.hidden { width: 0; }
+    .book-title { font-size: 1rem; }
+    .page-jump { display: none; }
+    .zoom-group { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <button class="menu-btn" onclick="toggleSidebar()" title="Toggle index">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <span class="book-title">🪷 Mor Bhagwa</span>
+  </div>
+  <div class="header-controls">
+    <div class="page-jump">
+      <span>Go to page</span>
+      <input type="number" id="page-input" min="1" value="1" onkeydown="if(event.key==='Enter') jumpToPage()">
+      <span>of</span>
+      <span id="total-pages">—</span>
+    </div>
+    <button class="ctrl-btn" onclick="jumpToPage()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      Go
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">📖 Contents</div>
+    <div class="sidebar-search">
+      <input type="text" id="toc-search" placeholder="Search chapters…" oninput="filterToc(this.value)">
+    </div>
+    <div class="toc-list" id="toc-list">
+      <div class="toc-empty" id="toc-loading">Loading index…</div>
+    </div>
+  </div>
+
+  <!-- VIEWER -->
+  <div class="viewer">
+    <!-- Loading -->
+    <div class="loading-overlay" id="loading">
+      <svg class="lotus" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="32" r="28" stroke="#FF6B00" stroke-width="2" stroke-dasharray="8 4"/>
+        <path d="M32 44 C32 44 20 36 20 26 C20 20 26 16 32 22 C38 16 44 20 44 26 C44 36 32 44 32 44Z" fill="#FF6B00" opacity=".8"/>
+        <path d="M32 40 C32 40 24 34 24 26 C24 22 28 20 32 24 C36 20 40 22 40 26 C40 34 32 40 32 40Z" fill="#FFB366"/>
+        <circle cx="32" cy="26" r="4" fill="#FFF3E8"/>
+      </svg>
+      <div class="loading-title">Mor Bhagwa</div>
+      <div class="loading-sub" id="loading-sub">Loading your book…</div>
+      <div class="loading-bar-track"><div class="loading-bar-fill" id="loading-bar"></div></div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="error-box">
+      <h2>Could not load PDF</h2>
+      <p>The PDF could not be fetched from Google Drive. This usually happens due to CORS restrictions.<br><br>
+      <strong>Fix:</strong> Make sure the Google Drive file sharing is set to <code>Anyone with the link → Viewer</code>.<br><br>
+      If it still fails, the PDF URL may need to be updated in this file. Open <code>index.html</code> and change the <code>PDF_URL</code> value at the top of the script.</p>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="pdf-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="nav-group">
+    <button class="nav-btn" id="btn-first" onclick="goToPage(1)" title="First page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/>
+      </svg>
+    </button>
+    <button class="nav-btn" id="btn-prev" onclick="goToPage(currentPage-1)" title="Previous page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-track" onclick="seekProgress(event)">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="page-info" id="page-info">— / —</div>
+  </div>
+
+  <div class="nav-group">
+    <button class="nav-btn" id="btn-next" onclick="goToPage(currentPage+1)" title="Next page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+    <button class="nav-btn" id="btn-last" onclick="goToPage(totalPages)" title="Last page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="zoom-group">
+    <button class="ctrl-btn" onclick="changeZoom(-0.15)" title="Zoom out">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>
+      </svg>
+    </button>
+    <span class="zoom-label" id="zoom-label">100%</span>
+    <button class="ctrl-btn" onclick="changeZoom(0.15)" title="Zoom in">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+      </svg>
+    </button>
+    <button class="ctrl-btn" onclick="fitToWidth()" title="Fit to width">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────
+  const FILE_ID = '1jpH4UYsVNWs-mDshb9pH52qQqK7ZlIbe';
+  const PDF_URL = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
+  const PROXY   = `https://corsproxy.io/?${encodeURIComponent(PDF_URL)}`;
+  // ────────────────────────────────────────────────────────────
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  let pdfDoc      = null;
+  let currentPage = 1;
+  let totalPages  = 0;
+  let scale       = 1.2;
+  let rendering   = false;
+  let renderQueue = null;
+  let tocItems    = [];
+  let sidebarOpen = true;
+
+  // ── LOAD PDF ────────────────────────────────────────────────
+  async function loadPDF() {
+    setLoading('Connecting to Google Drive…', 10);
+    try {
+      const loadingTask = pdfjsLib.getDocument({
+        url: PROXY,
+        withCredentials: false,
+      });
+
+      loadingTask.onProgress = (p) => {
+        if (p.total) {
+          const pct = Math.round((p.loaded / p.total) * 80) + 10;
+          setLoading(`Loading… ${Math.round(p.loaded/1024/1024)}MB`, pct);
+        }
+      };
+
+      pdfDoc = await loadingTask.promise;
+      totalPages = pdfDoc.numPages;
+
+      document.getElementById('total-pages').textContent = totalPages;
+      setLoading('Preparing viewer…', 95);
+
+      await buildTOC();
+      await renderPage(1);
+
+      document.getElementById('loading').classList.add('hidden');
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error-box').classList.add('show');
+    }
+  }
+
+  function setLoading(msg, pct) {
+    document.getElementById('loading-sub').textContent = msg;
+    document.getElementById('loading-bar').style.width = pct + '%';
+  }
+
+  // ── RENDER PAGE ─────────────────────────────────────────────
+  async function renderPage(num) {
+    if (rendering) { renderQueue = num; return; }
+    rendering = true;
+
+    const page    = await pdfDoc.getPage(num);
+    const wrap    = document.getElementById('canvas-wrap');
+    const canvas  = document.getElementById('pdf-canvas');
+    const ctx     = canvas.getContext('2d');
+
+    // Auto-fit scale on first load
+    if (num === 1) {
+      const vp0   = page.getViewport({ scale: 1 });
+      const avail = wrap.clientWidth - 48;
+      scale = Math.min(1.4, avail / vp0.width);
+    }
+
+    const viewport = page.getViewport({ scale });
+    const dpr      = window.devicePixelRatio || 1;
+    canvas.width   = viewport.width  * dpr;
+    canvas.height  = viewport.height * dpr;
+    canvas.style.width  = viewport.width  + 'px';
+    canvas.style.height = viewport.height + 'px';
+    ctx.scale(dpr, dpr);
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    currentPage = num;
+    updateUI();
+
+    rendering = false;
+    if (renderQueue !== null) {
+      const q = renderQueue; renderQueue = null;
+      renderPage(q);
+    }
+  }
+
+  // ── TOC ─────────────────────────────────────────────────────
+  async function buildTOC() {
+    const list = document.getElementById('toc-list');
+    try {
+      const outline = await pdfDoc.getOutline();
+      if (!outline || outline.length === 0) {
+        list.innerHTML = `<div class="toc-empty">No bookmarks found in this PDF.<br><br>You can still jump to any page using the "Go to page" box above.</div>`;
+        return;
+      }
+      tocItems = [];
+      flattenOutline(outline, 1);
+      renderToc(tocItems);
+    } catch(e) {
+      list.innerHTML = `<div class="toc-empty">Index unavailable. Use the page jump box to navigate.</div>`;
+    }
+  }
+
+  function flattenOutline(items, level) {
+    for (const item of items) {
+      tocItems.push({ title: item.title, dest: item.dest, level, bold: item.bold });
+      if (item.items && item.items.length) flattenOutline(item.items, level + 1);
+    }
+  }
+
+  function renderToc(items) {
+    const list = document.getElementById('toc-list');
+    list.innerHTML = items.map((item, i) => `
+      <div class="toc-item level-${Math.min(item.level, 3)}" data-idx="${i}" onclick="jumpToDest(${i})">
+        <span style="flex:1">${escHtml(item.title)}</span>
+      </div>
+    `).join('');
+  }
+
+  async function jumpToDest(idx) {
+    const item = tocItems[idx];
+    if (!item || !item.dest) return;
+    try {
+      let dest = item.dest;
+      if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
+      if (!dest) return;
+      const ref  = dest[0];
+      const page = await pdfDoc.getPageIndex(ref);
+      goToPage(page + 1);
+      highlightToc(idx);
+      // close sidebar on mobile
+      if (window.innerWidth < 640) toggleSidebar();
+    } catch(e) { console.warn('TOC jump error', e); }
+  }
+
+  function highlightToc(idx) {
+    document.querySelectorAll('.toc-item').forEach(el => el.classList.remove('active'));
+    const el = document.querySelector(`.toc-item[data-idx="${idx}"]`);
+    if (el) { el.classList.add('active'); el.scrollIntoView({ block: 'nearest' }); }
+  }
+
+  function filterToc(q) {
+    const lower = q.toLowerCase();
+    const filtered = q ? tocItems.filter(i => i.title.toLowerCase().includes(lower)) : tocItems;
+    renderToc(filtered);
+  }
+
+  // ── NAVIGATION ──────────────────────────────────────────────
+  function goToPage(n) {
+    n = Math.max(1, Math.min(totalPages, n));
+    if (n === currentPage && !rendering) return;
+    renderPage(n);
+    document.getElementById('page-input').value = n;
+  }
+
+  function jumpToPage() {
+    const v = parseInt(document.getElementById('page-input').value);
+    if (!isNaN(v)) goToPage(v);
+  }
+
+  function seekProgress(e) {
+    if (!totalPages) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct  = (e.clientX - rect.left) / rect.width;
+    goToPage(Math.round(pct * totalPages));
+  }
+
+  // ── ZOOM ────────────────────────────────────────────────────
+  function changeZoom(delta) {
+    scale = Math.max(0.4, Math.min(3.0, scale + delta));
+    renderPage(currentPage);
+    updateZoomLabel();
+  }
+
+  function fitToWidth() {
+    const wrap = document.getElementById('canvas-wrap');
+    pdfDoc.getPage(currentPage).then(page => {
+      const vp   = page.getViewport({ scale: 1 });
+      scale      = (wrap.clientWidth - 48) / vp.width;
+      renderPage(currentPage);
+      updateZoomLabel();
+    });
+  }
+
+  function updateZoomLabel() {
+    document.getElementById('zoom-label').textContent = Math.round(scale * 100) + '%';
+  }
+
+  // ── UI ──────────────────────────────────────────────────────
+  function updateUI() {
+    const pct = totalPages ? (currentPage / totalPages * 100) : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+    document.getElementById('page-input').value = currentPage;
+    document.getElementById('btn-prev').disabled  = currentPage <= 1;
+    document.getElementById('btn-first').disabled = currentPage <= 1;
+    document.getElementById('btn-next').disabled  = currentPage >= totalPages;
+    document.getElementById('btn-last').disabled  = currentPage >= totalPages;
+    updateZoomLabel();
+  }
+
+  function toggleSidebar() {
+    sidebarOpen = !sidebarOpen;
+    document.getElementById('sidebar').classList.toggle('hidden', !sidebarOpen);
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── KEYBOARD ────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goToPage(currentPage + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goToPage(currentPage - 1);
+    if (e.key === 'Home') goToPage(1);
+    if (e.key === 'End')  goToPage(totalPages);
+    if (e.key === '+' || e.key === '=') changeZoom(0.15);
+    if (e.key === '-') changeZoom(-0.15);
+  });
+
+  // ── DISABLE PRINT / RIGHT-CLICK ─────────────────────────────
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  window.addEventListener('beforeprint', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && ['p','s','P','S'].includes(e.key)) e.preventDefault();
+  });
+
+  // ── START ────────────────────────────────────────────────────
+  loadPDF();
+</script>
+</body>
+</html>
