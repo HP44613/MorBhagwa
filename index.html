@@ -437,9 +437,14 @@
 
 <script>
   // ── CONFIG ──────────────────────────────────────────────────
-  const FILE_ID = '1jpH4UYsVNWs-mDshb9pH52qQqK7ZlIbe';
-  const PDF_URL = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
-  const PROXY   = `https://corsproxy.io/?${encodeURIComponent(PDF_URL)}`;
+  const FILE_ID  = '1jpH4UYsVNWs-mDshb9pH52qQqK7ZlIbe';
+  const DRIVE_URL = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
+  const PROXIES  = [
+    `https://corsproxy.io/?${encodeURIComponent(DRIVE_URL)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(DRIVE_URL)}`,
+    `https://proxy.cors.sh/${DRIVE_URL}`,
+    `https://cors-anywhere.herokuapp.com/${DRIVE_URL}`,
+  ];
   // ────────────────────────────────────────────────────────────
 
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -454,37 +459,43 @@
   let tocItems    = [];
   let sidebarOpen = true;
 
-  // ── LOAD PDF ────────────────────────────────────────────────
+  // ── LOAD PDF — tries each proxy in turn ─────────────────────
   async function loadPDF() {
     setLoading('Connecting to Google Drive…', 10);
-    try {
-      const loadingTask = pdfjsLib.getDocument({
-        url: PROXY,
-        withCredentials: false,
-      });
 
-      loadingTask.onProgress = (p) => {
-        if (p.total) {
-          const pct = Math.round((p.loaded / p.total) * 80) + 10;
-          setLoading(`Loading… ${Math.round(p.loaded/1024/1024)}MB`, pct);
+    for (let i = 0; i < PROXIES.length; i++) {
+      const proxy = PROXIES[i];
+      setLoading(`Trying connection ${i + 1} of ${PROXIES.length}…`, 15 + i * 15);
+      try {
+        const loadingTask = pdfjsLib.getDocument({
+          url: proxy,
+          withCredentials: false,
+        });
+
+        loadingTask.onProgress = (p) => {
+          if (p.total) {
+            const pct = Math.round((p.loaded / p.total) * 50) + 40;
+            setLoading(`Loading… ${Math.round(p.loaded / 1024 / 1024)}MB`, pct);
+          }
+        };
+
+        pdfDoc = await loadingTask.promise;
+        totalPages = pdfDoc.numPages;
+        document.getElementById('total-pages').textContent = totalPages;
+        setLoading('Preparing viewer…', 95);
+        await buildTOC();
+        await renderPage(1);
+        document.getElementById('loading').classList.add('hidden');
+        return; // success — stop trying
+
+      } catch (err) {
+        console.warn(`Proxy ${i + 1} failed:`, err.message);
+        if (i === PROXIES.length - 1) {
+          // all proxies exhausted
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('error-box').classList.add('show');
         }
-      };
-
-      pdfDoc = await loadingTask.promise;
-      totalPages = pdfDoc.numPages;
-
-      document.getElementById('total-pages').textContent = totalPages;
-      setLoading('Preparing viewer…', 95);
-
-      await buildTOC();
-      await renderPage(1);
-
-      document.getElementById('loading').classList.add('hidden');
-
-    } catch (err) {
-      console.error(err);
-      document.getElementById('loading').classList.add('hidden');
-      document.getElementById('error-box').classList.add('show');
+      }
     }
   }
 
