@@ -493,18 +493,20 @@
   }
 
   // ── SCROLL VIEWER ───────────────────────────────────────────
-  async function initScrollViewer() {
+  async function initScrollViewer(keepScale = false) {
     const wrap = document.getElementById('canvas-wrap');
     const container = document.getElementById('pdf-pages');
     container.innerHTML = '';
     renderedPages.clear();
     renderingSet.clear();
 
-    // Calculate scale from first page
+    // Calculate scale from first page only if not already set
     const firstPage = await pdfDoc.getPage(1);
     const vp0 = firstPage.getViewport({ scale: 1 });
-    const avail = wrap.clientWidth - 32;
-    scale = Math.min(1.4, avail / vp0.width);
+    if (!keepScale || scale === 0) {
+      const avail = wrap.clientWidth - 32;
+      scale = Math.min(1.4, avail / vp0.width);
+    }
 
     // Create placeholder divs for all pages
     const vp = firstPage.getViewport({ scale });
@@ -881,10 +883,13 @@
   }
 
   function reRenderAll() {
+    const savedPage = currentPage;
     renderedPages.clear();
     renderingSet.clear();
     if (pageObserver) pageObserver.disconnect();
-    initScrollViewer().then(() => goToPage(currentPage));
+    initScrollViewer(true).then(() => {
+      setTimeout(() => goToPage(savedPage), 100);
+    });
   }
 
   function updateZoomLabel() {
