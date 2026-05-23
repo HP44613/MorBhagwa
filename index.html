@@ -582,232 +582,34 @@
 
   // ── TOC ─────────────────────────────────────────────────────
   async function buildTOC() {
-    // Hardcoded TOC from document
-    tocItems = [
-      {title:"Goal of the Book", page:2, level:1},
-      {title:"Author's Note", page:3, level:1},
-      {title:"Chapter 1: The 1920 Love Story of Maanki and Keshav!", page:12, level:1},
-      {title:"Chapter 2: Tracing Our Roots - A Journey through Time", page:15, level:1},
-      {title:"Secrets beneath the Sea (10,000 years ago)", page:15, level:2},
-      {title:"Mor Bhagwa's Indus Valley Connection (5000 years ago)", page:18, level:2},
-      {title:"From Indus Valley to Bharuch and Our Village (2300 Years Ago)", page:18, level:2},
-      {title:"King Trilochanpal's documented History (1050 AD)", page:20, level:2},
-      {title:"Gohil Dynasty Migration to Bhagwa (1347)", page:21, level:2},
-      {title:"Bhagwa: A Small Part of Lata Pradesh's Rich History", page:25, level:2},
-      {title:"From Bhankora to Bhagwa: Tracing Our Village's Evolving Identity", page:26, level:2},
-      {title:"Arrivals and Departures of the Parsis in Bhagwa (1600-1970)", page:28, level:2},
-      {title:"Community Migrations and the Founding of Mor", page:31, level:2},
-      {title:"Ancient Monuments and Idols in Our Community", page:33, level:2},
-      {title:"Bhagwa Port: A Historical Maritime Perspective", page:37, level:2},
-      {title:"Chapter 3: Insights into Our Community's Rich Heritage", page:40, level:1},
-      {title:"The Formation of Our Coastal Community", page:40, level:2},
-      {title:"Fadia names in our Villages", page:43, level:2},
-      {title:"Important Places and Landmarks of Bhagwa, Delasa and Mor", page:44, level:2},
-      {title:"The Division of Dandi, Mor and Delasa from Bhagwa", page:46, level:2},
-      {title:"Population of our Community", page:46, level:2},
-      {title:"2024 Population Estimation of our community across the Globe", page:49, level:2},
-      {title:"Estimated Population Distribution in Age Groups", page:54, level:2},
-      {title:"The Evolution of Surnames", page:55, level:2},
-      {title:"Physical Characteristics and Appearances", page:57, level:2},
-      {title:"The Diverse Body Colors of Our Coastal Heritage", page:57, level:2},
-      {title:"The Height of Our Coastal People", page:59, level:2},
-      {title:"The Changing Body Shapes of Our Coastal Communities", page:60, level:2},
-      {title:"Our Gamthi Regional Language", page:61, level:2},
-      {title:"Changes in Languages due to Migration", page:63, level:2},
-      {title:"Kehvats in Mor Bhagwa Culture", page:65, level:2},
-      {title:"Chapter 4: Migration from Village to Cities in India", page:67, level:1},
-      {title:"Migration within India", page:67, level:2},
-      {title:"Early 20th Century Migration", page:67, level:2},
-      {title:"Mid 20th Century Migration", page:67, level:2},
-      {title:"Late 20th Century Migration", page:68, level:2},
-      {title:"21st Century Migration", page:69, level:2},
-      {title:"The Pull of Home and Roots after retirement", page:70, level:2},
-      {title:"Migration in Surat", page:71, level:2},
-      {title:"Hazira's Industrial Boom: Fueling Growth and Opportunities", page:73, level:2},
-      {title:"Benefits of Living in Surat after Retirement", page:74, level:2},
-      {title:"Chapter 5: Global Migration", page:76, level:1},
-      {title:"The Migration to Africa", page:76, level:2},
-      {title:"Possible Migrations of Indians from 1600 AD to 1800 AD", page:77, level:2},
-      {title:"Sea Trade Routes from Surat to Africa (19th/Early 20th Century)", page:79, level:2},
-      {title:"Current People of our community living in different parts of Africa", page:82, level:2},
-      {title:"Paths to the United Kingdom", page:83, level:2},
-      {title:"Gifts from the UK: Providing Glimpses and Inspiring Dreams in India", page:89, level:2},
-      {title:"From Imported Partners to Intercultural Unions: The Shift in Weddings", page:91, level:2},
-      {title:"BMD Mandal – Bringing the Migrants on one Platform", page:92, level:2},
-      {title:"Vidhyadan Trust – UK: A Light for Better Education", page:94, level:2},
-      {title:"Chapter 6: The Changing Face of Wealth, Work, and Roles", page:97, level:1},
-      {title:"Chart of Occupational Trends of our Community: 1900-2024", page:97, level:2},
-      {title:"Before 1900: Traditional Jobs and Simple Living", page:100, level:2},
-      {title:"The Era of Transition (1900-1960)", page:102, level:2},
-      {title:"Beyond Material Wealth: The Joys of a Simpler Life", page:106, level:2},
-      {title:"Economy From 1960 to 2000", page:107, level:2},
-      {title:"Net worth and Income Analysis of our Community in Surat", page:109, level:2},
-      {title:"The Millennials and Gen Z – Education & Professional Pursuits", page:110, level:2},
-      {title:"The Rise of Educational Migration", page:111, level:2},
-      {title:"Chapter 7: Key Professions in our Community", page:114, level:1},
-      {title:"The Shipping Sector", page:114, level:2},
-      {title:"The Foundations of Maritime Trade (1500-1900)", page:114, level:2},
-      {title:"Local Ship Ownership and Continued Maritime Traditions (1850-1960)", page:116, level:2},
-      {title:"Transition to Modern Shipping (Early 1900s)", page:123, level:2},
-      {title:"The Modern Era of Shipping (1950-Present)", page:124, level:2},
-      {title:"Reflections and Legacy", page:130, level:2},
-      {title:"Gulf Dreams: The Waves of Temporary Migration", page:133, level:2},
-      {title:"Gulf Employment, Initial Years", page:134, level:2},
-      {title:"The Salary Levels in Gulf Jobs vs India Jobs", page:135, level:2},
-      {title:"The Shrimp Farming Business – Jhinga Tadav", page:138, level:2},
-      {title:"Early Experimentations (1997–2000)", page:138, level:2},
-      {title:"The Rise of the Industry", page:139, level:2},
-      {title:"The Golden Era (2010-2016)", page:140, level:2},
-      {title:"The Shrimp Gold Rush: Sudden Wealth", page:141, level:2},
-      {title:"The Down Fall of Jhinga Tadav (2016 onwards)", page:142, level:2},
-      {title:"Heavy Losses: The Financial Impact on Farmers", page:144, level:2},
-      {title:"The Current Scenario", page:145, level:2},
-      {title:"Chapter 8: Women - Anchors of Society, The Unsung Heroines", page:147, level:1},
-      {title:"The Period of 1900 to 1960 Generation", page:147, level:2},
-      {title:"Daily Routine of Village Women", page:147, level:2},
-      {title:"Challenges and Hardships", page:149, level:2},
-      {title:"In Human Abusers - A Cycle of Violence", page:151, level:2},
-      {title:"Bossy Mothers-in-Law", page:153, level:2},
-      {title:"Coping Mechanisms – Emotional Outlets / Sense of Purpose", page:155, level:2},
-      {title:"Family and Community Life", page:159, level:2},
-      {title:"Ghunghat Pratha", page:160, level:2},
-      {title:"The Age of 1900-1960, a Satyug?", page:161, level:2},
-      {title:"Fatherless Homes: Migration and Mortality", page:162, level:2},
-      {title:"A Village's Transition by the Migration - 1950 to 1990", page:163, level:2},
-      {title:"The Era of the Millennials and Gen Z", page:165, level:2},
-      {title:"Progress and Its Prices: The Millennial and Gen Z Experience", page:168, level:2},
-      {title:"The Intergenerational Tug-of-War Over Women's Dressing", page:171, level:2},
-      {title:"Chapter 9: Superstition - A Roadblock to Progress?", page:174, level:1},
-      {title:"Prevalent Superstitions in Our Community", page:174, level:2},
-      {title:"Confronting Harmful Traditions", page:178, level:2},
-      {title:"The Rebirth of Superstition in the Digital Age", page:179, level:2},
-      {title:"Critical Thinking and Progress", page:179, level:2},
-      {title:"Chapter 10: Religious Activities in our Community", page:182, level:1},
-      {title:"Old-Time Religion: What People Might Have Believed in the 1800s", page:182, level:2},
-      {title:"The Limited influence of Religious Practices (1900-1960s)", page:183, level:2},
-      {title:"The Rise of Hinduism and Sants in our Community (1960s-2000)", page:184, level:2},
-      {title:"Women as Drivers of Increased Religious Practices", page:184, level:2},
-      {title:"Bhavaiyas, Television and the Growth of Devotion", page:185, level:2},
-      {title:"Santoshi Ma, Jalaram Bapa, Shirdi Sai Baba and Beyond", page:186, level:2},
-      {title:"Further Rise of Temples, Sects, Guru's and Baba's (2000-2024)", page:187, level:2},
-      {title:"Gayatri Shakti Peeth", page:188, level:2},
-      {title:"Social Media Digital Devotions, Chardhams and Ram Mandirs after 2010", page:191, level:2},
-      {title:"The Generational Divide: Navigating Faith and Logical Thinking", page:192, level:2},
-      {title:"The Sacred Bonds of Kuldevi Traditions", page:196, level:2},
-      {title:"Kuldevis of Our Village: A Photographic Catalogue", page:198, level:2},
-      {title:"Chapter 11: Customs and Traditions", page:203, level:1},
-      {title:"Marriages Made in Heavens", page:203, level:2},
-      {title:"Marriage Traditions and Customs: 1900's", page:203, level:2},
-      {title:"Weddings in the 1950's", page:204, level:2},
-      {title:"The Emergence of Love Marriages", page:205, level:2},
-      {title:"A Community Free from the Curse of Dowry", page:207, level:2},
-      {title:"Marrying Within Our Village: A Tradition of Wisdom and Genetic Health", page:207, level:2},
-      {title:"The Major Events in our Marriages", page:209, level:2},
-      {title:"Evolving Wedding Traditions across Generations", page:213, level:2},
-      {title:"Problems and challenges faced in the weddings!", page:214, level:2},
-      {title:"Huge Challenge of Finding a Match in our Community", page:220, level:2},
-      {title:"Natru: The Custom of Remarriage", page:221, level:2},
-      {title:"Funeral Rituals: Shifts across Generations", page:225, level:2},
-      {title:"A Whole Year's Death Ceremony Rituals", page:226, level:2},
-      {title:"Total Confusion in Performing Rituals", page:227, level:2},
-      {title:"Strange Rituals followed by our Ancestors", page:230, level:2},
-      {title:"The Ritual of Bali Pratha – Pada Kapu", page:230, level:2},
-      {title:"Morakhya Marriage", page:230, level:2},
-      {title:"The Promise to the Divine – Manta Rakhvi", page:232, level:2},
-      {title:"Fasting 'Upvas'", page:232, level:2},
-      {title:"Changing Relationship with Alcohol", page:233, level:2},
-      {title:"Chapter 12: Leisure Activities and Entertainment", page:242, level:1},
-      {title:"Simple Joys in 19th Century", page:242, level:2},
-      {title:"The Evolution of Entertainment: 1900-2000", page:243, level:2},
-      {title:"Entertainment in the New Millennium (2000-2024)", page:251, level:2},
-      {title:"Chapter 13: Cuisine and Culinary", page:255, level:1},
-      {title:"Roots of Our Cuisine: Food Traditions 1900-1950", page:255, level:2},
-      {title:"A Taste of Change: Our Food Journey 1960-2010", page:258, level:2},
-      {title:"From 2010 to 2024: The Digital Food Revolution", page:261, level:2},
-      {title:"Chapter 14: Education in Various times", page:264, level:1},
-      {title:"Education before the School", page:264, level:2},
-      {title:"The Birth of Formal Education: Bhagwa Prathmik Shala (1867)", page:265, level:2},
-      {title:"The Birth and Growth of Mor High School", page:267, level:2},
-      {title:"The Rise and Fall of First English School", page:271, level:2},
-      {title:"Urban-Rural Education Divide - Future Skills", page:273, level:2},
-      {title:"Chapter 15: Stories of Community Icons", page:276, level:1},
-      {title:"The Freedom Fighters of Our Village", page:276, level:2},
-      {title:"Govind Dhana: The First known Voyager to Africa", page:277, level:2},
-      {title:"Hansi Khaja: The Resilient Entrepreneur and Community Leader", page:278, level:2},
-      {title:"Durlabh Bhana, The First Engineer", page:280, level:2},
-      {title:"Thakore Docter: The Village's First Lifeline", page:282, level:2},
-      {title:"Shanti Ishwar Patel - The First on the Indian Stock Exchange", page:285, level:2},
-      {title:"Rajnikant Navik: A Life of Service and Devotion", page:288, level:2},
-      {title:"Kantilal Patel's Story of Family, Business, and Community", page:290, level:2},
-      {title:"Binding Roots through Social Media: Satish Patel's UK-India Bridge", page:291, level:2},
-      {title:"Chapter 16: Community Organizations and Social Groups", page:293, level:1},
-      {title:"The Essence of Community Support", page:293, level:2},
-      {title:"The Caring Village Around Us", page:293, level:2},
-      {title:"The Mumbai Lodging Facility for our Community", page:303, level:2},
-      {title:"Social Media: Our Digital Community", page:304, level:2},
-      {title:"Social Groups: Bhajan Mandalis – The Healing Singers", page:306, level:2},
-      {title:"Mor Mumbai Mitra Mandal", page:307, level:2},
-      {title:"Chapter 17: Giving Back, Finding Joy: The Rewards of Community Engagement", page:310, level:1},
-      {title:"The Power of Giving: Individual, Group, and Family Charity", page:311, level:2},
-      {title:"Ways to Give Back", page:315, level:2},
-      {title:"Discovering Your Community Role", page:316, level:2},
-      {title:"Chapter 18: Interesting Short Stories of our Villages", page:321, level:1},
-      {title:"The Flood and the Hidden Treasures", page:321, level:2},
-      {title:"The Devana Fadia Underground Treasure Theft", page:323, level:2},
-      {title:"The Scary Huggi Ghost Lady of Mor Village", page:325, level:2},
-      {title:"Mor's Beached Whale Story: A Village United", page:328, level:2},
-      {title:"Tim Koryat – The first Englishmen to Die in Mor Bhagwa?", page:329, level:2},
-      {title:"The Students' Cycle Trek in 1960: From Surat to Our Village", page:331, level:2},
-      {title:"The Secret Trade: Smuggling Gold into the Villages", page:333, level:2},
-      {title:"Sanatan Dharam Beliefs of not crossing the Sea", page:334, level:2},
-      {title:"The Sea-Crossing Milk Woman of Bhavnagar", page:335, level:2},
-      {title:"Chapter 19: A Journey to our Villages: A Visitor's Guide", page:337, level:1},
-      {title:"A Nostalgic Journey Surat to Mor via Olpad", page:337, level:2},
-      {title:"Itinerary for First-Time or Infrequent Visitors", page:339, level:2},
-      {title:"Chapter 20: Rural Roots: Land Possession and Village Homes", page:346, level:1},
-      {title:"Understanding Land Types and Ownership", page:347, level:2},
-      {title:"Mud, Memories and Stories of Village Homes across Generations", page:351, level:2},
-      {title:"Chapter 21: A Roadmap to Building a Brighter Tomorrow", page:357, level:1},
-      {title:"Learning from Achievements of Other Gujarati Communities", page:357, level:2},
-      {title:"Learning from Thriving Indian Communities", page:358, level:2},
-      {title:"Understanding Our Community's Challenges", page:359, level:2},
-      {title:"From Distrust to Unity: Building a Positive Community Identity", page:361, level:2},
-      {title:"Project 1: Building a Community Organization – Samaj Trust", page:364, level:2},
-      {title:"Project 2: Building the Database and Connecting the Community", page:365, level:2},
-      {title:"Project 3: Your Family Tree Initiative - Connecting Generations", page:366, level:2},
-      {title:"Project 3: Modernizing Community Rituals", page:368, level:2},
-      {title:"Project 4: Not Building Community Hall in Surat", page:369, level:2},
-      {title:"Project 5: Building a Vibrant Retirement Community", page:370, level:2},
-      {title:"Project 6: Community Knowledge & Career Guidance Center", page:371, level:2},
-      {title:"Project 7: Community Matrimony Service", page:372, level:2},
-      {title:"Project 8: Roots Day - Celebrating Our Heritage", page:372, level:2},
-      {title:"Project 9: Empty Land into Beautiful Second Homes in Our Village", page:374, level:2},
-      {title:"Project 10: Setting Up a Family Help Group", page:376, level:2},
-      {title:"Project 11: Preserving Our Legacy: Writing Your Personal History", page:377, level:2},
-      {title:"Chapter 22: Lessons for a Happier Future", page:382, level:1},
-      {title:"Socioeconomic Evolution and Challenges", page:382, level:2},
-      {title:"Chapter 23: Serious Mistakes done by our Ancestors?", page:386, level:1},
-      {title:"The Broken Brotherhood: Disconnections with Dandi Village", page:386, level:2},
-      {title:"The Bhare Vs Vapur Cold War: A Village Divided", page:387, level:2},
-      {title:"Historical Social Errors at a Glance", page:391, level:2},
-      {title:"Practices and Beliefs of Current Generations?", page:394, level:2},
-      {title:"Chapter 24: Trees and Birds Around Us", page:397, level:1},
-      {title:"The Trees in our Villages", page:397, level:2},
-      {title:"Rohit Deva Patel: Pioneering Agroforestry in Our Village", page:397, level:2},
-      {title:"The Uninvited Guest: The Gando Bawal - The Mad Tree", page:399, level:2},
-      {title:"Chapter 25: Visions of Our Future", page:400, level:1},
-      {title:"Our Community in 2050 - Projecting the Future", page:400, level:2},
-      {title:"A Letter Across Time: To Be Opened in 2075", page:406, level:2},
-      {title:"About the Author", page:409, level:1},
-      {title:"Acknowledgement", page:412, level:1},
-    ];
-    renderToc(tocItems);
+    const list = document.getElementById('toc-list');
+    try {
+      const outline = await pdfDoc.getOutline();
+      if (!outline || outline.length === 0) {
+        list.innerHTML = `<div class="toc-empty">No bookmarks found.<br><br>Re-export your PDF from Word with<br>"Create bookmarks using Headings" enabled.</div>`;
+        return;
+      }
+      tocItems = [];
+      await flattenOutline(outline, 1);
+      renderToc(tocItems);
+    } catch(e) {
+      list.innerHTML = `<div class="toc-empty">Could not load index.</div>`;
+    }
   }
-
-  function flattenOutline(items, level) {
+  async function flattenOutline(items, level) {
     for (const item of items) {
-      tocItems.push({ title: item.title, dest: item.dest, level, bold: item.bold });
-      if (item.items && item.items.length) flattenOutline(item.items, level + 1);
+      // Resolve page number from destination
+      let pageNum = null;
+      try {
+        let dest = item.dest;
+        if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
+        if (dest) {
+          const pageIndex = await pdfDoc.getPageIndex(dest[0]);
+          pageNum = pageIndex + 1;
+        }
+      } catch(e) {}
+      tocItems.push({ title: item.title, dest: item.dest, page: pageNum, level });
+      if (item.items && item.items.length) await flattenOutline(item.items, level + 1);
     }
   }
 
@@ -816,15 +618,26 @@
     list.innerHTML = items.map((item, i) => `
       <div class="toc-item level-${Math.min(item.level, 3)}" data-idx="${i}" onclick="jumpToDest(${i})">
         <span style="flex:1">${escHtml(item.title)}</span>
-        <span class="toc-page">${item.page}</span>
+        ${item.page ? `<span class="toc-page">${item.page}</span>` : ''}
       </div>
     `).join('');
   }
 
-  function jumpToDest(idx) {
+  async function jumpToDest(idx) {
     const item = tocItems[idx];
     if (!item) return;
-    goToPage(item.page);
+    if (item.page) {
+      goToPage(item.page);
+    } else if (item.dest) {
+      try {
+        let dest = item.dest;
+        if (typeof dest === 'string') dest = await pdfDoc.getDestination(dest);
+        if (dest) {
+          const pageIndex = await pdfDoc.getPageIndex(dest[0]);
+          goToPage(pageIndex + 1);
+        }
+      } catch(e) { console.warn('TOC jump error', e); }
+    }
     highlightToc(idx);
     if (window.innerWidth < 640) toggleSidebar();
   }
